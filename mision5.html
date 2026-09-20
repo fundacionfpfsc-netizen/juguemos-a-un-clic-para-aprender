@@ -163,7 +163,7 @@ h1{margin:2px 0 0;font-size:clamp(24px,4vw,38px);line-height:1.02;color:#1b426f}
  <div class="result-card">
   <div class="result-top"><div class="result-icon" id="resultIcon">✅</div><div><h3 id="resultTitle">¡Muy bien!</h3><p id="resultSubtitle">CLIC encontró una señal importante.</p></div></div>
   <div class="result-body"><div class="main" id="resultMain"></div><div class="remember" id="resultRemember"></div></div>
-  <div class="result-next">Lee con calma. El siguiente correo llegará automáticamente.</div>
+  <div class="result-next">📖 Lee con calma la explicación. Cuando termines, toca fuera de la ficha para recibir el siguiente correo.</div>
  </div>
 </div>
 
@@ -223,15 +223,16 @@ function renderMail(){
 
 function choose(kind){
  if(locked)return;
+
  locked=true;
  const c=cases[current];
  const correct=kind===c.kind;
+
  document.querySelectorAll(".action").forEach(a=>a.classList.remove("selected"));
  const chosen=document.querySelector(`.action[data-kind="${kind}"]`);
  if(chosen)chosen.classList.add("selected");
 
- $("score").textContent=score+(correct?20:-5);
- if(correct)score+=20;else score=Math.max(0,score-5);
+ if(correct)score+=20; else score=Math.max(0,score-5);
  $("score").textContent=score;
 
  $("overlay").classList.add("show");
@@ -239,7 +240,7 @@ function choose(kind){
  if(correct){
    $("resultIcon").textContent="🎉";
    $("resultTitle").textContent="¡Excelente, CLIC!";
-   $("resultSubtitle").textContent="Detectaste correctamente la señal.";
+   $("resultSubtitle").textContent="¡Detectaste correctamente la señal!";
    $("resultMain").textContent=c.lesson;
    $("resultRemember").textContent=c.remember;
 
@@ -249,15 +250,8 @@ function choose(kind){
    void $("clicWrap").offsetWidth;
    $("clicWrap").classList.add("happy");
 
-   setTimeout(()=>{
-     $("overlay").classList.remove("show");
-     if(current<cases.length-1){
-       current++;
-       renderMail();
-     }else{
-       finish();
-     }
-   },3200);
+   // No se cierra automáticamente.
+   // El jugador debe leer y tocar fuera de la ficha para continuar.
  }else{
    $("resultIcon").textContent="🧭";
    $("resultTitle").textContent="Miremos otra vez";
@@ -266,13 +260,34 @@ function choose(kind){
    $("resultRemember").textContent="🔎 La cartilla enseña a pensar críticamente y verificar antes de actuar.";
 
    $("clicText").textContent="Mmm… revisemos juntos las señales una vez más.";
+
    setTimeout(()=>{
      $("overlay").classList.remove("show");
      document.querySelectorAll(".action").forEach(a=>a.classList.remove("selected"));
      locked=false;
-   },2500);
+   },3200);
  }
 }
+
+function continueAfterSuccess(){
+ if(!locked || !$("overlay").classList.contains("show")) return;
+ const c=cases[current];
+ if(current<cases.length-1){
+   $("overlay").classList.remove("show");
+   current++;
+   renderMail();
+ }else{
+   $("overlay").classList.remove("show");
+   finish();
+ }
+}
+
+$("overlay").addEventListener("click",e=>{
+ if(e.target !== $("overlay")) return;
+ if($("resultTitle").textContent === "¡Excelente, CLIC!"){
+   continueAfterSuccess();
+ }
+});
 
 function finish(){
  $("bar").style.width="100%";
@@ -283,6 +298,15 @@ function finish(){
 $("start").addEventListener("click",startGame);
 $("start").addEventListener("pointerup",e=>{if(e.pointerType!=="mouse")startGame()});
 document.querySelectorAll(".action").forEach(a=>a.addEventListener("click",()=>choose(a.dataset.kind)));
+
+document.addEventListener("keydown",e=>{
+ if(!$("overlay").classList.contains("show")) return;
+ if($("resultTitle").textContent !== "¡Excelente, CLIC!") return;
+ if(e.key==="Enter" || e.key===" "){
+   e.preventDefault();
+   continueAfterSuccess();
+ }
+});
 $("finish").addEventListener("click",startGame);
 </script>
 </body>
